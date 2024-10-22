@@ -1,5 +1,6 @@
 ## Interface: 110002
 ## Title: Brutilities
 ## Notes: Custom Raid Assist and Guild Management utilities for The Brute Squad on US-Hyjal
+## Dependencies: Chunklib
 00_brute_globals.lua
 01_brute_helper.lua

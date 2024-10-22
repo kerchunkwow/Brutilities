@@ -1,13 +1,16 @@
 -- BH is the namespace shared across all files in the Brute Helper addon
-_, BH = ...
+_, BH              = ...
 
-BH.fr = BH.fr or CreateFrame( "Frame" )
+-- Reference to Chunklib shared library
+Chunklib           = Chunklib or {}
+
+BH.fr              = BH.fr or CreateFrame( "Frame" )
 
 -- Table to accumulate event->handler pairs so they can be registered by wwra_reg.lua
-BH.eventHandlers = {}
+BH.eventHandlers   = {}
 
 -- Table to accumulate slash command->function pairs so they can be registered by wwra_reg.lua
-BH.slashCommands = {}
+BH.slashCommands   = {}
 
 BH.raidTargetIcons = {
   [0] = "None",
@@ -22,4 +25,3 @@ BH.raidTargetIcons = {
 }
 
 -- #region Global Color Map
-
