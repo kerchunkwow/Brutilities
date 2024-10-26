@@ -1,18 +1,15 @@
--- #region: Import from Brute Helper Namespace (BH)
--- BH is the local namespace shared by all Lua files in the Brute Helper addon.
-_, BH               = ...
+-- #region: Import from Brutilities Namespace
+_, Brutilities             = ...
 
-local fr            = BH.fr
-local eventHandlers = BH.eventHandlers
+local consoleOut           = Chunklib.consoleOut
 
+local fr                   = Brutilities.fr
+local eventHandlers        = Brutilities.eventHandlers
+local slashCommands        = Brutilities.slashCommands
+
+local stickAllCurrentMarks = Brutilities.stickAllCurrentMarks
 -- #endregion
 
--- Fires any time a target marker icon is changed and when players join/leave a group; not triggered
--- on death
--- https://warcraft.wiki.gg/wiki/RAID_TARGET_UPDATE
-local function _RAID_TARGET_UPDATE()
-end
-eventHandlers["RAID_TARGET_UPDATE"] = _RAID_TARGET_UPDATE
 
 -- Fires frequently for all events related to player Auras: buffs, debuffs, permanent affects, item
 -- procs, etc. Data payload can include multiple events of type add, remove, or update (e.g., stacks)
@@ -24,7 +21,11 @@ eventHandlers["UNIT_AURA"] = _UNIT_AURA
 -- Fires when any AddOn finishes loading; useful for performing init/config functions that depend
 -- upon a fully-loaded state (e.g., ensures all GUI objects are available)
 -- https://warcraft.wiki.gg/wiki/ADDON_LOADED
-local function _ADDON_LOADED( name, containsBindings )
+local function _ADDON_LOADED( addOnName, containsBindings )
+  if addOnName ~= "Brutilities" then return end
+  -- Request updated roster info from the server
+  C_GuildInfo.GuildRoster()
+  consoleOut( "Brutilities Loaded...", "dark_orange" )
 end
 eventHandlers["ADDON_LOADED"] = _ADDON_LOADED
 
@@ -52,3 +53,13 @@ end
 fr:SetScript( "OnEvent", function ( self, event, ... )
   eventHandlers[event]( ... )
 end )
+
+SlashCmdList = SlashCmdList or {}
+
+-- Register each slash command in the global namespace
+for name, data in pairs( slashCommands ) do
+  for i, cmd in ipairs( data.cmd ) do
+    _G["SLASH_" .. name .. i] = cmd
+  end
+  SlashCmdList[name] = data.func
+end

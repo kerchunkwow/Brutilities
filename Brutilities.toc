@@ -2,5 +2,8 @@
 ## Title: Brutilities
 ## Notes: Custom Raid Assist and Guild Management utilities for The Brute Squad on US-Hyjal
 ## Dependencies: Chunklib
-00_brute_globals.lua
-01_brute_helper.lua
+00_entry.lua
+10_raid_groups.lua
+20_raid_roster.lua
+30_sticky_marks.lua
+99_init.lua
