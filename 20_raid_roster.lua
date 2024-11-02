@@ -95,6 +95,14 @@ local function isIndexAssigned( index )
   return assignedIndices[index] ~= nil
 end
 
+-- Get the number of the highest group which has at least one onoccupied index
+local function getHighestNonfullGroup()
+  local group = 8
+  while group > 0 do
+    local groupIndices = getIndicesByGroup( group )
+  end
+end
+
 -- Determine whether the named raider has been assigned an index
 local function hasAssignedIndex( raider )
   return raider.assignedIndex and raider.assignedIndex > 0
@@ -141,6 +149,17 @@ local function getLowestUnassignedIndexByGroup( group )
     end
   end
   return nil -- No unassigned index in this group
+end
+
+-- Return the current index and corresponding group number of a raider based on their actual
+-- position to validate and plan moves
+local function getPositionByName( name )
+  for i = 1, 40 do
+    local raiderName, _, subgroup, _, _, _, _, _, _, _, _, _ = GetRaidRosterInfo( i )
+    if raiderName == name then
+      return i, subgroup
+    end
+  end
 end
 
 -- #endregion
@@ -381,17 +400,65 @@ local function validateAssignments()
   return true
 end
 
+-- Like Vacate Group but specifically moves anyone in Group 8 into group 7
+local function clearGroup8()
+  local group = 8
+  for i = 1, 40 do
+    local name, _, subgroup, _, _, _, _, _, _, _, _, _ = GetRaidRosterInfo( i )
+    if (name and name ~= "") and (subgroup and subgroup == group) then
+      SetRaidSubgroup( i, 7 )
+    end
+  end
+end
+
 -- Once a group has been vacated, find everyone who belongs in this group and swap them into it
 local function fillVacantGroup( group )
+  -- Convert the chat-command parameter
+  group = tonumber( group )
+
+  -- Create a local table of raiders who need to be moved to the specified group
+  local raidersToMove = {}
   for name, data in pairs( currentRaiders ) do
-    if (data.assignedIndex and data.assignedIndex > 0) then
+    if data.assignedIndex and data.assignedIndex > 0 then
       local assignedGroup = getGroupByIndex( data.assignedIndex )
       if assignedGroup == group then
-        consoleOut( "Filling group " .. group .. " with " .. name, "info" )
-        SetRaidSubgroup( data.index, group )
+        table.insert( raidersToMove, {name = name, data = data} )
       end
     end
   end
+  -- Sort the table by assignedIndex
+  table.sort( raidersToMove, function ( a, b )
+    return a.data.assignedIndex < b.data.assignedIndex
+  end )
+
+  -- Helper function to get the current index of a raider in the raid roster
+  local function getCurrentIndex( name )
+    for i = 1, 40 do
+      local raiderName = GetRaidRosterInfo( i )
+      if raiderName == name then
+        return i
+      end
+    end
+  end
+
+  local function validateMove( name )
+  end
+
+  -- Move each raider in `raidersToMove` to the specified group
+  for _, raider in ipairs( raidersToMove ) do
+    local name = raider.name
+    consoleOut( "Attempting to move " .. name .. " to group " .. group )
+    local currentIndex = getCurrentIndex( name )
+    if currentIndex then
+      consoleOut( "Moving " .. name .. " from " .. currentIndex .. " to " .. group, "info" )
+      ---@diagnostic disable-next-line: param-type-mismatch
+      SetRaidSubgroup( currentIndex, group )
+    else
+      consoleOut( "Could not find current index for " .. name, "warning" )
+    end
+  end
+  -- Call clearGroup8() 0.25s after this
+  C_Timer.After( 0.25, clearGroup8 )
 end
 
 -- Find anyone currently in the specified group and temporarily move them into Group 8 to make
@@ -405,10 +472,39 @@ local function vacateGroup( group )
       SetRaidSubgroup( i, 8 )
     end
   end
-  -- Schedule fillVacantGroup( group ) to run 0.5s after this function
-  C_Timer.After( 0.5, function ()
-    fillVacantGroup( group )
+end
+
+local function printAssignments()
+  local classColor = Chunklib.classColor
+  local hl = Chunklib.highlightString
+  -- Gather raiders into a list
+  local sortedRaiders = {}
+  for name, data in pairs( currentRaiders ) do
+    table.insert( sortedRaiders,
+      {name = name, assignedIndex = data.assignedIndex, class = data.class} )
+  end
+  -- Sort the list by assignedIndex
+  table.sort( sortedRaiders, function ( a, b )
+    return a.assignedIndex < b.assignedIndex
   end )
+
+  -- Print raiders in sorted order
+  for _, raider in ipairs( sortedRaiders ) do
+    local nameColor = classColor( raider.class )
+    if not nameColor then
+      consoleOut( "Couldn't find color for: " .. raider.name .. ", " .. raider.class, "err" )
+      nameColor = "|cFFFFFFFF"
+    end
+    local nameString = nameColor .. raider.name .. "|r: "
+    local grp = getGroupByIndex( raider.assignedIndex )
+    -- Set local hlc to "royal_blue" of group is even, "yellow_green" if odd
+    local hlc = grp % 2 == 0 and "royal_blue" or "yellow_green"
+    local index_string = " [" .. raider.assignedIndex .. "]"
+    local group_string = hl( " Group " .. grp .. index_string, hlc )
+
+
+    consoleOut( nameString .. group_string )
+  end
 end
 
 -- "Main" sort function to invoke the sort process in the correct order
@@ -422,6 +518,7 @@ end
 -- #region: Export to Brutilities Namespace; Command & Event Registration
 
 slashCommands["SORT_RAID"]                = {cmd = {"/rsort"}, func = sortRaid}
+slashCommands["PRINT_SORT"]               = {cmd = {"/printsort"}, func = printAssignments}
 
 Brutilities.slashCommands["VACATE_GROUP"] = {
   cmd = {"/vac"},
@@ -430,4 +527,10 @@ Brutilities.slashCommands["VACATE_GROUP"] = {
   end
 }
 
+Brutilities.slashCommands["FILL_GROUP"]   = {
+  cmd = {"/fill"},
+  func = function ( group )
+    fillVacantGroup( group )
+  end
+}
 -- #endregion
