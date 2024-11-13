@@ -73,7 +73,6 @@ local function _GROUP_FORMED()
   eventHandlers["GROUP_FORMED"] = nil
 end
 
--- Queue raiders for invites to a raid
 local function sendRaidInvites()
   -- Otherwise eligible members who should be excluded from raid invites
   local excluded = {
@@ -89,13 +88,13 @@ local function sendRaidInvites()
     eventHandlers["GROUP_FORMED"] = _GROUP_FORMED
     fr:RegisterEvent( "GROUP_FORMED" )
   end
-  -- Ranks start at GM = 0 and count up; ranks less or equal 7 are eligible to raid
+  -- Ranks start at GM = 0 and count up; ranks less or equal to 7 are eligible to raid
   local raidRank = 7
 
   -- Check the roster for anyone who needs to be queued for an invite
   local totalMembers = GetNumGuildMembers()
   for i = 1, totalMembers do
-    local name, _, rank, lvl, _, _, _, _, online, _, _, _, _, _, _, _ = GetGuildRosterInfo( i )
+    local name, _, rank, lvl, _, _, _, _, online, _, _, _, _, _, _, _, _ = GetGuildRosterInfo( i )
 
     -- Remove '-Hyjal' from names as invites work differently for players on our home server
     name = string.gsub( name, "-Hyjal", "" )
