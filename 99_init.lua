@@ -45,15 +45,6 @@ end
 local function _GROUP_ROSTER_UPDATE()
 end
 
--- Register all of the events in the eventHandlers table
-for e in pairs( eventHandlers ) do
-  fr:RegisterEvent( e )
-end
--- On event, invoke handler
-fr:SetScript( "OnEvent", function ( self, event, ... )
-  eventHandlers[event]( ... )
-end )
-
 SlashCmdList = SlashCmdList or {}
 
 -- Register each slash command in the global namespace

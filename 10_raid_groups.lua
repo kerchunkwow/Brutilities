@@ -88,8 +88,8 @@ local function sendRaidInvites()
     eventHandlers["GROUP_FORMED"] = _GROUP_FORMED
     fr:RegisterEvent( "GROUP_FORMED" )
   end
-  -- Ranks start at GM = 0 and count up; ranks less or equal to 7 are eligible to raid
-  local raidRank = 7
+  -- Ranks start at GM = 0 and count up; ranks less or equal to 6 are eligible to raid
+  local raidRank = 6
 
   -- Check the roster for anyone who needs to be queued for an invite
   local totalMembers = GetNumGuildMembers()
